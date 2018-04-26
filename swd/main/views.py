@@ -113,7 +113,13 @@ def loginform(request):
                 return redirect('/admin')
         if Warden.objects.filter(user=request.user):
             return redirect('/warden')
-        return redirect('dashboard')
+        if HostelSuperintendent.objects.filter(user=request.user):
+            return redirect('/hostelsuperintendent')
+        if request.user.groups.filter(name='security').exists():
+            return redirect('/security')
+        if Student.objects.filter(user=request.user):
+            return redirect('dashboard')
+        return None
 
     if request.POST:
         username = request.POST.get('username')
@@ -127,7 +133,11 @@ def loginform(request):
                 return redirect('/warden')
             if HostelSuperintendent.objects.filter(user=request.user):
                 return redirect('/hostelsuperintendent')
-            return redirect('dashboard')
+            if request.user.groups.filter(name='security').exists():
+                return redirect('/security')
+            if Student.objects.filter(user=request.user):
+                return redirect('dashboard')
+            return None
         else:
             messages.add_message(request, messages.INFO,  "Incorrect username or password", extra_tags='red')
             print('Not able to authenticate')
@@ -693,3 +703,13 @@ def search(request):
             'searchstr' : searchstr
         }
     return render(request, "search.html", dict(context, **postContext))
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='security').exists())
+def security(request):
+    leaves = Leave.objects.filter(dateTimeStart=date.today())
+    context = {
+        'option': 0,
+        'leaves': leaves
+    }
+    return render(request, 'security.html', context)
